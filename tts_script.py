@@ -5,15 +5,23 @@ from botocore.exceptions import BotoCoreError, ClientError
 from contextlib import closing
 from dotenv import load_dotenv
 
+# 1. st.set_page_config() MUTLAKA İLK STREAMLIT KOMUTU OLMALI
+# Bu yüzden sayfa başlığını şimdilik statik veya basit bir dilde ayarlıyoruz.
+# Arayüzün geri kalanı seçilen dile göre dinamik olacaktır.
+st.set_page_config(
+    page_title="Text-to-Speech App", # Tarayıcı sekmesi için başlık
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # Ortam değişkenlerini .env dosyasından yükle (eğer varsa)
 load_dotenv()
 
 # --- Dil Çevirileri ---
-# Uygulama arayüzü için dil çevirilerini burada tanımlayacağız.
-# İhtiyaç duydukça yeni diller ve çeviriler ekleyebilirsiniz.
 translations = {
     "en": {
-        "app_title": "🎙️ Text-to-Speech (TTS) with Amazon Polly",
+        "app_page_title": "TTS App", # st.set_page_config için (isteğe bağlı, yukarıdakiyle aynı olabilir)
+        "app_main_title": "🎙️ Text-to-Speech (TTS) with Amazon Polly",
         "app_description": "This application converts your input text into speech using Amazon Polly.",
         "settings_header": "⚙️ Settings",
         "select_ui_language": "Select UI Language:",
@@ -23,6 +31,7 @@ translations = {
         "voice_id_label": "Voice ID",
         "engine_label": "Engine",
         "language_label": "Language",
+        "gender_label": "Gender",
         "enter_text_header": "Enter Text",
         "text_area_label": "Enter text to convert to speech here:",
         "text_area_placeholder": "Hello! Welcome to the text-to-speech application using Amazon Polly.",
@@ -31,7 +40,8 @@ translations = {
         "audio_success": "✔️ Audio successfully generated!",
         "audio_error": "❌ Audio could not be generated. Please check error messages above.",
         "no_text_warning": "⚠️ Please enter some text to convert.",
-        "polly_client_error": "Polly client could not be initialized. Please check your AWS settings.",
+        "polly_client_error_config": "Polly client could not be initialized. Please ensure AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION) are correctly set in Streamlit Secrets or environment variables.",
+        "polly_client_error_runtime": "Polly client is not available. Please check AWS configuration.",
         "polly_api_error": "Amazon Polly API error: {error}",
         "unknown_synthesis_error": "An unknown error occurred during speech synthesis: {error}",
         "no_audio_stream": "Could not retrieve audio stream from Polly.",
@@ -45,10 +55,14 @@ translations = {
 - Standard pricing applies if you exceed these limits or after 12 months.
 - Track your usage via the [AWS Billing Dashboard](https://console.aws.amazon.com/billing/).
 """,
-        "developer_info": "Developed by: [Your Name / GitHub Username]" # Kendi bilgilerinizi ekleyin
+        "developer_info": "Developed by: [Adınız / GitHub Kullanıcı Adınız]",
+        "no_voices_for_language": "No voices available for {language_name} ({language_code}).",
+        "select_valid_voice_warning": "Please select a valid voice.",
+        "no_voices_from_polly_warning": "No voices could be retrieved from Amazon Polly. Please check AWS configuration and Polly service status."
     },
     "tr": {
-        "app_title": "🎙️ Amazon Polly ile Metin Okuma (TTS)",
+        "app_page_title": "Metin Okuma Uygulaması", # st.set_page_config için
+        "app_main_title": "🎙️ Amazon Polly ile Metin Okuma (TTS)",
         "app_description": "Bu uygulama, girdiğiniz metni Amazon Polly servisini kullanarak sese dönüştürür.",
         "settings_header": "⚙️ Ayarlar",
         "select_ui_language": "Arayüz Dilini Seçin:",
@@ -58,6 +72,7 @@ translations = {
         "voice_id_label": "Ses Kimliği",
         "engine_label": "Motor",
         "language_label": "Dil",
+        "gender_label": "Cinsiyet",
         "enter_text_header": "Metni Girin",
         "text_area_label": "Sese dönüştürülecek metni buraya yazın:",
         "text_area_placeholder": "Merhaba! Amazon Polly kullanarak metinden sese dönüştürme uygulamasına hoş geldiniz.",
@@ -66,7 +81,8 @@ translations = {
         "audio_success": "✔️ Ses başarıyla oluşturuldu!",
         "audio_error": "❌ Ses oluşturulamadı. Lütfen yukarıdaki hata mesajlarını kontrol edin.",
         "no_text_warning": "⚠️ Lütfen sese dönüştürmek için bir metin girin.",
-        "polly_client_error": "Polly istemcisi başlatılamadı. Lütfen AWS ayarlarınızı kontrol edin.",
+        "polly_client_error_config": "Polly istemcisi başlatılamadı. Lütfen AWS kimlik bilgilerinin (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION) Streamlit Secrets veya ortam değişkenlerinde doğru şekilde ayarlandığından emin olun.",
+        "polly_client_error_runtime": "Polly istemcisi mevcut değil. Lütfen AWS yapılandırmasını kontrol edin.",
         "polly_api_error": "Amazon Polly API hatası: {error}",
         "unknown_synthesis_error": "Ses sentezlenirken bilinmeyen bir hata oluştu: {error}",
         "no_audio_stream": "Polly'den ses akışı alınamadı.",
@@ -80,33 +96,57 @@ translations = {
 - Bu limitleri aşarsanız veya 12 ay dolduktan sonra standart ücretlendirme uygulanır.
 - Kullanımınızı [AWS Billing Dashboard](https://console.aws.amazon.com/billing/) üzerinden takip edebilirsiniz.
 """,
-        "developer_info": "Geliştiren: [Kerem Alagöz / keremalagoz" 
+        "developer_info": "Geliştiren: [Adınız / GitHub Kullanıcı Adınız]",
+        "no_voices_for_language": "{language_name} ({language_code}) için kullanılabilir ses bulunamadı.",
+        "select_valid_voice_warning": "Lütfen geçerli bir ses seçin.",
+        "no_voices_from_polly_warning": "Amazon Polly'den hiçbir ses alınamadı. Lütfen AWS yapılandırmanızı ve Polly servis durumunu kontrol edin."
     }
 }
 
-# --- AWS Polly İstemcisini Yapılandırma ---
-@st.cache_resource # Kaynağı önbellekle, tekrar tekrar client oluşturma
-def get_polly_client():
-    """AWS Polly istemcisini başlatır."""
-    try:
-        aws_access_key_id = st.secrets.get("AWS_ACCESS_KEY_ID")
-        aws_secret_access_key = st.secrets.get("AWS_SECRET_ACCESS_KEY")
-        aws_region = st.secrets.get("AWS_DEFAULT_REGION", "us-east-1") # Polly'nin olduğu bir bölge
-    except AttributeError: # st.secrets yoksa (lokal test)
-        aws_access_key_id = None
-        aws_secret_access_key = None
-        aws_region = "us-east-1"
+# --- Session State Başlatma ---
+# st.set_page_config'den SONRA gelmeli
+if 'ui_language' not in st.session_state:
+    st.session_state.ui_language = "tr" # Varsayılan arayüz dili
+if 'audio_bytes' not in st.session_state:
+    st.session_state.audio_bytes = None
+if 'file_name' not in st.session_state:
+    st.session_state.file_name = None
+if 'selected_tts_language_code' not in st.session_state: # Dil kodu saklanacak
+    st.session_state.selected_tts_language_code = None
+if 'selected_voice_info' not in st.session_state: # Tüm ses bilgisini sakla
+    st.session_state.selected_voice_info = None
 
-    if not all([aws_access_key_id, aws_secret_access_key]):
+# UI dilini almak için yardımcı fonksiyon
+# Bu fonksiyon artık st.session_state başlatıldıktan sonra tanımlanabilir/kullanılabilir
+def t(key, **kwargs):
+    lang_code = st.session_state.get('ui_language', 'en') # Güvenlik için varsayılan
+    return translations.get(lang_code, translations['en']).get(key, f"<{key}>").format(**kwargs)
+
+
+# --- AWS Polly İstemcisini Yapılandırma ---
+@st.cache_resource
+def get_polly_client():
+    try:
+        aws_access_key_id_secret = st.secrets.get("AWS_ACCESS_KEY_ID")
+        aws_secret_access_key_secret = st.secrets.get("AWS_SECRET_ACCESS_KEY")
+        aws_region_secret = st.secrets.get("AWS_DEFAULT_REGION", "us-east-1")
+
+        aws_access_key_id_env = os.environ.get('AWS_ACCESS_KEY_ID')
+        aws_secret_access_key_env = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        aws_region_env = os.environ.get('AWS_DEFAULT_REGION')
+
+        # Öncelik: Streamlit secrets, sonra ortam değişkenleri
+        aws_access_key_id = aws_access_key_id_secret or aws_access_key_id_env
+        aws_secret_access_key = aws_secret_access_key_secret or aws_secret_access_key_env
+        aws_region = aws_region_secret or aws_region_env or "us-east-1" # Son bir varsayılan
+
+    except AttributeError: # st.secrets mevcut değilse (örn. eski Streamlit versiyonu veya farklı ortam)
         aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
         aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        aws_region_env = os.environ.get('AWS_DEFAULT_REGION')
-        if aws_region_env:
-            aws_region = aws_region_env
+        aws_region = os.environ.get('AWS_DEFAULT_REGION', "us-east-1")
 
     if not all([aws_access_key_id, aws_secret_access_key, aws_region]):
-        # Hata mesajını UI dili seçildikten sonra göstermek daha iyi olabilir.
-        # Şimdilik, client None dönecek ve bu aşağıda ele alınacak.
+        # Hata mesajı UI'da gösterilecek, burada client None dönecek
         return None
 
     try:
@@ -123,54 +163,57 @@ def get_polly_client():
 polly_client = get_polly_client()
 
 # --- Polly Seslerini Getirme Fonksiyonu ---
-@st.cache_data(show_spinner=False) # Veriyi önbellekle
-def get_available_voices(_client): # _client parametresi cache'in client değiştiğinde yenilenmesi için
-    """Amazon Polly'den kullanılabilir tüm sesleri ve dilleri alır."""
-    if not _client:
-        return {}, {} # voices_by_lang, lang_names
-
-    all_voices = []
-    try:
-        paginator = _client.get_paginator('describe_voices')
-        for page in paginator.paginate():
-            all_voices.extend(page['Voices'])
-    except (BotoCoreError, ClientError) as error:
-        st.error(f"Polly sesleri alınırken hata: {error}")
+@st.cache_data(show_spinner=False)
+def get_available_voices(_client_ref): # _client_ref, cache'in client'a bağımlı olması için
+    if not _client_ref:
         return {}, {}
 
-    voices_by_lang = {}
-    lang_names = {} # Dil kodlarını dil adlarına eşlemek için (örn: tr-TR -> Turkish)
+    all_polly_voices_raw = []
+    try:
+        paginator = _client_ref.get_paginator('describe_voices')
+        for page in paginator.paginate():
+            all_polly_voices_raw.extend(page['Voices'])
+    except (BotoCoreError, ClientError) as error:
+        # Bu hata UI'da daha sonra ele alınabilir veya burada loglanabilir.
+        # Şimdilik boş döndürerek UI'da "ses yok" mesajı gösterilmesini sağlıyoruz.
+        print(f"Polly sesleri alınırken hata: {error}") # Konsola loglama
+        return {}, {}
 
-    for voice in all_voices:
-        lang_code = voice['LanguageCode']
-        lang_name = voice['LanguageName']
-        if lang_code not in voices_by_lang:
-            voices_by_lang[lang_code] = []
-            lang_names[lang_code] = lang_name
+    voices_by_lang_code = {} # {'tr-TR': [voice_info1, voice_info2], ...}
+    lang_code_to_name_map = {} # {'tr-TR': 'Turkish', ...}
 
-        # Her ses için birden fazla motor olabilir, bunları ayrı seçenekler olarak sunalım
-        for engine in voice['SupportedEngines']:
-            display_name = f"{voice['Name']} ({engine.capitalize()})"
-            voices_by_lang[lang_code].append({
-                "display_name": display_name,
-                "id": voice['Id'],
+    for voice_detail in all_polly_voices_raw:
+        lang_code = voice_detail['LanguageCode']
+        lang_name = voice_detail['LanguageName']
+        if lang_code not in voices_by_lang_code:
+            voices_by_lang_code[lang_code] = []
+            lang_code_to_name_map[lang_code] = lang_name
+
+        for engine in voice_detail['SupportedEngines']:
+            # Her (VoiceId, Engine) kombinasyonunu ayrı bir seçenek olarak sakla
+            voices_by_lang_code[lang_code].append({
+                "display_name": f"{voice_detail['Name']} ({engine.capitalize()}) - {voice_detail['Gender']}",
+                "id": voice_detail['Id'],
                 "engine": engine,
-                "gender": voice['Gender']
+                "gender": voice_detail['Gender'],
+                "language_code": lang_code,
+                "language_name": lang_name
             })
-    # Dilleri alfabetik olarak sırala
-    sorted_lang_codes = sorted(lang_names.keys(), key=lambda k: lang_names[k])
-    sorted_lang_names = {code: lang_names[code] for code in sorted_lang_codes}
+    # Dil adlarına göre sıralı dil kodları listesi
+    # Önce dil adına, sonra dil koduna göre sırala (örn: English (AU), English (GB), English (US))
+    sorted_lang_codes = sorted(lang_code_to_name_map.keys(), key=lambda k: (lang_code_to_name_map[k], k))
+    
+    # Sıralı dil kodlarına göre dil adı haritası
+    sorted_lang_code_to_name_map = {code: lang_code_to_name_map[code] for code in sorted_lang_codes}
+    
+    return voices_by_lang_code, sorted_lang_code_to_name_map
 
-    return voices_by_lang, sorted_lang_names
 
 # --- Metin Okuma Fonksiyonu ---
 def synthesize_speech(client, text, voice_id, engine):
-    """Verilen metni Amazon Polly kullanarak ses dosyasına dönüştürür."""
-    ui_lang = st.session_state.get('ui_language', 'en')
     if not client:
-        st.error(translations[ui_lang]["polly_client_error"])
+        st.error(t("polly_client_error_runtime"))
         return None, None
-
     try:
         response = client.synthesize_speech(
             Text=text,
@@ -179,10 +222,10 @@ def synthesize_speech(client, text, voice_id, engine):
             Engine=engine
         )
     except (BotoCoreError, ClientError) as error:
-        st.error(translations[ui_lang]["polly_api_error"].format(error=error))
+        st.error(t("polly_api_error", error=error))
         return None, None
     except Exception as e:
-        st.error(translations[ui_lang]["unknown_synthesis_error"].format(error=e))
+        st.error(t("unknown_synthesis_error", error=e))
         return None, None
 
     if "AudioStream" in response:
@@ -190,111 +233,122 @@ def synthesize_speech(client, text, voice_id, engine):
             audio_bytes = stream.read()
             return audio_bytes, "audio/mpeg"
     else:
-        st.error(translations[ui_lang]["no_audio_stream"])
+        st.error(t("no_audio_stream"))
         return None, None
 
-# --- Streamlit Arayüzü ---
-
-# Session state başlatma
-if 'ui_language' not in st.session_state:
-    st.session_state.ui_language = "tr" # Varsayılan arayüz dili Türkçe
-if 'audio_bytes' not in st.session_state:
-    st.session_state.audio_bytes = None
-if 'file_name' not in st.session_state:
-    st.session_state.file_name = None
-if 'selected_tts_language' not in st.session_state:
-    st.session_state.selected_tts_language = None
-if 'selected_voice_info' not in st.session_state:
-    st.session_state.selected_voice_info = None
-
-
-# UI dilini almak için yardımcı fonksiyon
-def t(key, **kwargs):
-    return translations[st.session_state.ui_language].get(key, key).format(**kwargs)
-
-# Sayfa Yapılandırması (Dil seçimi değiştiğinde yeniden çalıştırılır)
-st.set_page_config(page_title=t("app_title"), layout="wide", initial_sidebar_state="expanded")
-st.title(t("app_title"))
+# --- Ana Arayüz Başlığı ---
+st.title(t("app_main_title"))
 st.markdown(t("app_description"))
 st.markdown("---")
 
+# Polly client kontrolü
 if not polly_client:
-    st.error(t("polly_client_error") + " " + "Lütfen AWS kimlik bilgilerinizi Streamlit Secrets veya ortam değişkenleri ile doğru şekilde ayarladığınızdan emin olun.")
+    st.error(t("polly_client_error_config"))
     st.stop() # Polly client yoksa uygulamayı durdur
 
 # Polly seslerini ve dillerini al
-VOICES_BY_LANG, LANG_NAMES = get_available_voices(polly_client)
+ALL_VOICES_BY_LANG_CODE, LANG_CODE_TO_NAME_MAP = get_available_voices(polly_client)
 
-if not VOICES_BY_LANG:
-    st.warning("Amazon Polly'den hiçbir ses alınamadı. Lütfen AWS yapılandırmanızı ve Polly servis durumunu kontrol edin.")
+if not ALL_VOICES_BY_LANG_CODE:
+    st.warning(t("no_voices_from_polly_warning"))
     st.stop()
+
 
 # --- Kenar Çubuğu (Sidebar) ---
 st.sidebar.header(t("settings_header"))
 
 # Arayüz Dili Seçimi
-available_ui_langs = {"Türkçe": "tr", "English": "en"} # Daha fazla dil ekleyebilirsiniz
-selected_ui_lang_display = st.sidebar.selectbox(
-    label=t("select_ui_language"), # Bu label ilk başta varsayılan dilde olacak
-    options=available_ui_langs.keys(),
-    index=list(available_ui_langs.values()).index(st.session_state.ui_language), # Mevcut seçimi koru
-    key="ui_language_selector_key" # Yeniden render için benzersiz anahtar
+available_ui_langs_map = {"Türkçe": "tr", "English": "en"}
+current_ui_lang_display_name = [name for name, code in available_ui_langs_map.items() if code == st.session_state.ui_language][0]
+
+selected_ui_lang_display_name = st.sidebar.selectbox(
+    label=t("select_ui_language"),
+    options=list(available_ui_langs_map.keys()),
+    index=list(available_ui_langs_map.keys()).index(current_ui_lang_display_name)
 )
-# Seçilen UI dilini session state'e ata
-# Bu atama, sayfanın yeniden çalışmasını tetikleyebilir ve tüm metinler güncellenir.
-if st.session_state.ui_language != available_ui_langs[selected_ui_lang_display]:
-    st.session_state.ui_language = available_ui_langs[selected_ui_lang_display]
-    st.experimental_rerun() # Arayüz dilini anında güncellemek için
+selected_ui_lang_code = available_ui_langs_map[selected_ui_lang_display_name]
+
+if st.session_state.ui_language != selected_ui_lang_code:
+    st.session_state.ui_language = selected_ui_lang_code
+    st.experimental_rerun()
 
 # TTS Dili Seçimi
-# LANG_NAMES: {'en-US': 'US English', 'tr-TR': 'Turkish', ...}
-# Options için dil adlarını ve kodlarını birleştirerek daha kullanıcı dostu yapalım
-tts_language_options = {f"{name} ({code})": code for code, name in LANG_NAMES.items()}
+# LANG_CODE_TO_NAME_MAP: {'en-US': 'US English', 'tr-TR': 'Turkish', ...}
+# Kullanıcıya gösterilecek seçenekler: "Dil Adı (Dil Kodu)"
+tts_language_display_options = {
+    f"{name} ({code})": code for code, name in LANG_CODE_TO_NAME_MAP.items()
+}
 
-# Eğer daha önce bir dil seçilmemişse veya seçilen dil artık mevcut değilse, varsayılanı ayarla
-if st.session_state.selected_tts_language not in tts_language_options.values():
-    st.session_state.selected_tts_language = next(iter(tts_language_options.values()), None) # İlk uygun dili al
+# Eğer daha önce bir dil seçilmemişse veya seçilen dil artık mevcut değilse, ilk uygun dili varsayılan yap
+if st.session_state.selected_tts_language_code not in tts_language_display_options.values():
+    if tts_language_display_options: # Eğer dil seçenekleri varsa
+        st.session_state.selected_tts_language_code = next(iter(tts_language_display_options.values()))
+    else: # Hiç dil seçeneği yoksa (API'den dil gelmediyse)
+        st.session_state.selected_tts_language_code = None
+
+
+# Mevcut seçili TTS dilinin gösterim adını bul
+current_selected_tts_lang_display = None
+if st.session_state.selected_tts_language_code:
+    for display, code in tts_language_display_options.items():
+        if code == st.session_state.selected_tts_language_code:
+            current_selected_tts_lang_display = display
+            break
 
 selected_tts_lang_display = st.sidebar.selectbox(
     label=t("select_voice_language"),
-    options=list(tts_language_options.keys()),
-    index=list(tts_language_options.values()).index(st.session_state.selected_tts_language)
-            if st.session_state.selected_tts_language in tts_language_options.values() else 0,
-    key="tts_language_selector_key"
+    options=list(tts_language_display_options.keys()),
+    index=list(tts_language_display_options.keys()).index(current_selected_tts_lang_display) if current_selected_tts_lang_display else 0,
+    disabled=not tts_language_display_options # Eğer dil yoksa devre dışı bırak
 )
-st.session_state.selected_tts_language = tts_language_options[selected_tts_lang_display]
+if selected_tts_lang_display: # Kullanıcı bir dil seçtiyse
+    st.session_state.selected_tts_language_code = tts_language_display_options[selected_tts_lang_display]
+else: # Hiç dil seçeneği yoksa
+    st.session_state.selected_tts_language_code = None
 
 
-# Seçilen dile ait sesleri al
-voices_for_selected_lang = VOICES_BY_LANG.get(st.session_state.selected_tts_language, [])
-voice_options = {voice['display_name']: voice for voice in voices_for_selected_lang}
+# Seçilen TTS diline ait sesleri al
+voices_for_selected_lang_list = []
+if st.session_state.selected_tts_language_code:
+    voices_for_selected_lang_list = ALL_VOICES_BY_LANG_CODE.get(st.session_state.selected_tts_language_code, [])
+
+# Ses seçeneklerini hazırla: "Görünen Ad": voice_info_dict
+voice_display_options = {
+    voice['display_name']: voice for voice in voices_for_selected_lang_list
+}
 
 # Eğer sesler varsa devam et
-if voice_options:
-    # Eğer daha önce bir ses seçilmemişse veya seçilen ses artık mevcut değilse, varsayılanı ayarla
-    current_selected_voice_display = st.session_state.get("selected_voice_display_name")
-    if current_selected_voice_display not in voice_options:
-        current_selected_voice_display = next(iter(voice_options.keys()), None)
+if voice_display_options:
+    # Mevcut seçili sesin gösterim adını bul
+    current_selected_voice_display_name = None
+    if st.session_state.selected_voice_info and \
+       st.session_state.selected_voice_info['display_name'] in voice_display_options:
+        current_selected_voice_display_name = st.session_state.selected_voice_info['display_name']
+    elif voice_display_options: # Eğer önceki seçim yoksa veya geçersizse, ilk sesi al
+        current_selected_voice_display_name = next(iter(voice_display_options.keys()))
+
 
     selected_voice_display_name = st.sidebar.selectbox(
         label=t("select_voice"),
-        options=list(voice_options.keys()),
-        index=list(voice_options.keys()).index(current_selected_voice_display) if current_selected_voice_display else 0,
-        key="voice_selector_key"
+        options=list(voice_display_options.keys()),
+        index=list(voice_display_options.keys()).index(current_selected_voice_display_name) if current_selected_voice_display_name else 0
     )
-    st.session_state.selected_voice_display_name = selected_voice_display_name
-    st.session_state.selected_voice_info = voice_options[selected_voice_display_name]
+    st.session_state.selected_voice_info = voice_display_options[selected_voice_display_name]
 
     # Seçilen ses bilgilerini göster
     st.sidebar.markdown(f"**{t('selected_voice_info')}**")
-    st.sidebar.json({
-        t("voice_id_label"): st.session_state.selected_voice_info['id'],
-        t("engine_label"): st.session_state.selected_voice_info['engine'].capitalize(),
-        t("language_label"): LANG_NAMES[st.session_state.selected_tts_language]
-    })
-else:
-    st.sidebar.warning(f"{LANG_NAMES.get(st.session_state.selected_tts_language, st.session_state.selected_tts_language)} için kullanılabilir ses bulunamadı.")
-    st.session_state.selected_voice_info = None # Ses yoksa bilgiyi temizle
+    # JSON yerine daha okunaklı bir gösterim
+    st.sidebar.markdown(f"- **{t('voice_id_label')}:** `{st.session_state.selected_voice_info['id']}`")
+    st.sidebar.markdown(f"- **{t('engine_label')}:** `{st.session_state.selected_voice_info['engine'].capitalize()}`")
+    st.sidebar.markdown(f"- **{t('language_label')}:** `{st.session_state.selected_voice_info['language_name']}`")
+    st.sidebar.markdown(f"- **{t('gender_label')}:** `{st.session_state.selected_voice_info['gender']}`")
+
+elif st.session_state.selected_tts_language_code: # Dil seçildi ama ses yoksa
+    lang_name_for_warning = LANG_CODE_TO_NAME_MAP.get(st.session_state.selected_tts_language_code, st.session_state.selected_tts_language_code)
+    st.sidebar.warning(t("no_voices_for_language", language_name=lang_name_for_warning, language_code=st.session_state.selected_tts_language_code))
+    st.session_state.selected_voice_info = None
+else: # Hiç TTS dili seçilmemişse (genellikle başlangıçta veya API hatasında)
+    st.session_state.selected_voice_info = None
 
 
 # --- Ana İçerik ---
@@ -305,8 +359,14 @@ text_to_convert = st.text_area(
     placeholder=t("text_area_placeholder")
 )
 
-if st.button(t("generate_audio_button"), type="primary", use_container_width=True, disabled=not st.session_state.selected_voice_info):
-    if text_to_convert and st.session_state.selected_voice_info:
+generate_button_disabled = not st.session_state.selected_voice_info
+
+if st.button(t("generate_audio_button"), type="primary", use_container_width=True, disabled=generate_button_disabled):
+    if not text_to_convert:
+        st.warning(t("no_text_warning"))
+    elif not st.session_state.selected_voice_info: # Bu durum disabled ile zaten engellenmeli ama ekstra kontrol
+        st.warning(t("select_valid_voice_warning"))
+    else:
         voice_id = st.session_state.selected_voice_info['id']
         engine = st.session_state.selected_voice_info['engine']
         voice_name_for_spinner = st.session_state.selected_voice_info['display_name'].split(' (')[0]
@@ -316,15 +376,12 @@ if st.button(t("generate_audio_button"), type="primary", use_container_width=Tru
 
             if audio_bytes:
                 st.session_state.audio_bytes = audio_bytes
-                st.session_state.file_name = f"polly_tts_{voice_id.lower().replace(' ', '_')}.mp3"
+                clean_voice_id = "".join(c if c.isalnum() else "_" for c in voice_id) # Dosya adı için temizle
+                st.session_state.file_name = f"polly_tts_{clean_voice_id}.mp3"
                 st.success(t("audio_success"))
             else:
                 st.session_state.audio_bytes = None
                 # Hata mesajı synthesize_speech içinde zaten gösterildi.
-    elif not st.session_state.selected_voice_info:
-        st.warning(t("Lütfen geçerli bir ses seçin.")) # Bu mesajı da çeviri dosyasına ekleyebilirsiniz.
-    else:
-        st.warning(t("no_text_warning"))
 
 # Oluşturulan sesi göster ve indirme butonu ekle
 if st.session_state.audio_bytes:
@@ -342,4 +399,5 @@ if st.session_state.audio_bytes:
 st.sidebar.markdown("---")
 st.sidebar.subheader(t("aws_free_tier_info_header"))
 st.sidebar.markdown(t("aws_free_tier_info_text"), unsafe_allow_html=True)
+st.sidebar.markdown("---")
 st.sidebar.markdown(t("developer_info"))
