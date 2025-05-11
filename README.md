@@ -25,10 +25,6 @@
 *   User interface available in English and Turkish.
 *   Responsive design, usable on mobile and desktop devices.
 
-### Screenshots
-
-_(Add a screenshot of your application here. You can drag and drop an image into the GitHub editor or use Markdown's image syntax: ![App Screenshot](path/to/your/screenshot.png))_
-
 ### Setup and Running
 
 #### Prerequisites
@@ -134,10 +130,6 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 *   Oluşturulan sesi MP3 dosyası olarak indirebilme.
 *   İngilizce ve Türkçe dillerinde kullanıcı arayüzü.
 *   Mobil ve masaüstü cihazlarda kullanılabilir duyarlı tasarım.
-
-### Ekran Görüntüleri
-
-_(Uygulamanızın bir ekran görüntüsünü buraya ekleyin.)_
 
 ### Kurulum ve Çalıştırma
 
