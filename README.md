@@ -38,11 +38,10 @@
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/keremalagoz/YOUR_REPOSITORY_NAME.git
-    cd YOUR_REPOSITORY_NAME
+    git clone https://github.com/keremalagoz/text-to-speech-streamlit-polly.git
+    cd text-to-speech-streamlit-polly
     ```
-    _(Replace `YOUR_REPOSITORY_NAME` with your actual repository name)_
-
+    
 2.  **Create and Activate a Virtual Environment (Recommended):**
     ```bash
     python -m venv venv
@@ -144,11 +143,10 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 
 1.  **Depoyu Klonlayın:**
     ```bash
-    git clone https://github.com/keremalagoz/YOUR_REPOSITORY_NAME.git
-    cd YOUR_REPOSITORY_NAME
+    git clone https://github.com/keremalagoz/text-to-speech-streamlit-polly.git
+    cd text-to-speech-streamlit-polly
     ```
-    _(`YOUR_REPOSITORY_NAME` kısmını kendi depo adınızla değiştirin)_
-
+    
 2.  **Sanal Ortam Oluşturun ve Aktifleştirin (Önerilir):**
     ```bash
     python -m venv venv
