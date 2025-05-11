@@ -42,14 +42,6 @@ translations = {
         "no_audio_stream": "Could not retrieve audio stream from Polly.",
         "generated_audio_header": "Generated Audio",
         "download_mp3_button": "🎵 Download as MP3",
-        "aws_free_tier_info_header": "💡 Information",
-        "aws_free_tier_info_text": """
-- Amazon Polly is free for 12 months under the AWS Free Tier:
-    - **Standard Voices:** 5 million characters per month.
-    - **Neural Voices (NTTS):** 1 million characters per month.
-- Standard pricing applies if you exceed these limits or after 12 months.
-- Track your usage via the [AWS Billing Dashboard](https://console.aws.amazon.com/billing/).
-""",
         "developer_info_header": "🧑‍💻 Developer",
         "developer_github": "GitHub",
         "developer_linkedin": "LinkedIn",
@@ -85,14 +77,6 @@ translations = {
         "no_audio_stream": "Polly'den ses akışı alınamadı.",
         "generated_audio_header": "Oluşturulan Ses",
         "download_mp3_button": "🎵 MP3 Olarak İndir",
-        "aws_free_tier_info_header": "💡 Bilgilendirme",
-        "aws_free_tier_info_text": """
-- Amazon Polly, AWS Ücretsiz Kullanım Katmanı kapsamında 12 ay boyunca ücretsizdir:
-    - **Standart Sesler:** Ayda 5 milyon karakter.
-    - **Nöral Sesler (NTTS):** Ayda 1 milyon karakter.
-- Bu limitleri aşarsanız veya 12 ay dolduktan sonra standart ücretlendirme uygulanır.
-- Kullanımınızı [AWS Billing Dashboard](https://console.aws.amazon.com/billing/) üzerinden takip edebilirsiniz.
-""",
         "developer_info_header": "🧑‍💻 Geliştirici",
         "developer_github": "GitHub",
         "developer_linkedin": "LinkedIn",
@@ -316,9 +300,6 @@ if st.session_state.audio_bytes:
         use_container_width=True
     )
 
-st.sidebar.markdown("---")
-st.sidebar.subheader(t("aws_free_tier_info_header"))
-st.sidebar.markdown(t("aws_free_tier_info_text"), unsafe_allow_html=True)
 st.sidebar.markdown("---")
 st.sidebar.subheader(t("developer_info_header"))
 st.sidebar.markdown(f"[{t('developer_github')}](https://github.com/keremalagoz) | [{t('developer_linkedin')}](https://www.linkedin.com/in/keremalagoz/)")
