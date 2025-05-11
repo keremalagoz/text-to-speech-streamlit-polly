@@ -1,8 +1,9 @@
-# Text-to-Speech (TTS) with Amazon Polly - Streamlit App / Amazon Polly ile Metin Okuma (TTS) - Streamlit Uygulaması
+# Text-to-Speech (TTS) with Amazon Polly - Streamlit App
 
-This is an interactive web application built with [Streamlit](https://streamlit.io/) and Amazon Web Services (AWS) [Polly](https://aws.amazon.com/polly/) that converts text into natural-sounding speech. / Bu, [Streamlit](https://streamlit.io/) ve Amazon Web Services (AWS) [Polly](https://aws.amazon.com/polly/) servisleri kullanılarak metni doğal sondajlı sese dönüştüren interaktif bir web uygulamasıdır.
+This is an interactive web application built with [Streamlit](https://streamlit.io/) and Amazon Web Services (AWS) [Polly](https://aws.amazon.com/polly/) that converts text into natural-sounding speech. 
+Bu, [Streamlit](https://streamlit.io/) ve Amazon Web Services (AWS) [Polly](https://aws.amazon.com/polly/) servisleri kullanılarak metni doğal sondajlı sese dönüştüren interaktif bir web uygulamasıdır.
 
-🌐 **[View Live Demo (if deployed) / Canlı Demoyu Görüntüle (Eğer Dağıtıldıysa)](YOUR_STREAMLIT_APP_URL_HERE)**  _(Replace with your actual app URL / Gerçek uygulama URL'niz ile değiştirin)_
+🌐 **[View Live Demo (if deployed) / Canlı Demoyu Görüntüle](https://text-to-speech-app-polly.streamlit.app/)**
 
 ---
 
